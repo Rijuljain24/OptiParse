@@ -243,11 +243,9 @@ export function AnalysisResults({ results }: AnalysisResultsProps) {
         {/* Formatted Code Tab */}
         <div className="h-full" data-content="formatted" style={{ display: 'none' }}>
           <h3 className="text-lg font-medium mb-3">Formatted Code</h3>
-          <div className="h-[calc(100vh-300px)] rounded-md overflow-auto">
-            <pre className="border rounded-md p-4 bg-gray-50 font-mono text-sm whitespace-pre">
-              {results.formatted.code}
-            </pre>
-          </div>
+          <pre className="border rounded-md p-4 bg-gray-50 font-mono text-sm whitespace-pre overflow-auto h-[calc(100vh-330px)]">
+            {results.formatted.code}
+          </pre>
         </div>
       </div>
     </div>

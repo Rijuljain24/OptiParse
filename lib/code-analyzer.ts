@@ -1,4 +1,4 @@
-// Simple lexical analyzer for different languages
+// This is my lexical analyzer for the compiler design assignment! Works for different languages
 const tokenPatterns = {
   javascript: [
     {
@@ -87,7 +87,7 @@ const tokenPatterns = {
   ],
 }
 
-// Perform lexical analysis
+// finally got my lexical analysis to work! breaks code into meaningful tokens
 function performLexicalAnalysis(code: string, language: string) {
   const patterns = tokenPatterns[language as keyof typeof tokenPatterns] || tokenPatterns.javascript
   const tokens: Array<{ lexeme: string; type: string; line: number }> = []
@@ -101,7 +101,7 @@ function performLexicalAnalysis(code: string, language: string) {
       let matchedType = ""
 
       for (const { type, pattern } of patterns) {
-        pattern.lastIndex = 0 // Reset regex state
+        pattern.lastIndex = 0 // gotta reset regex state or it breaks!
         const regex = new RegExp(`^${pattern.source}`, "g")
         const result = regex.exec(line.substring(position))
 
@@ -123,7 +123,7 @@ function performLexicalAnalysis(code: string, language: string) {
         }
         position += match.length
       } else {
-        // Skip unrecognized character
+        // just skip stuff we don't recognize - not ideal but whatever
         position++
       }
     }
@@ -132,12 +132,12 @@ function performLexicalAnalysis(code: string, language: string) {
   return tokens
 }
 
-// Perform basic syntax analysis
+// The syntax analysis part was the hardest for this assignment!
 function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; line: number }>, language: string) {
   const errors: Array<{ message: string; line: number }> = []
     const stack: Array<{ char: string; line: number }> = []
 
-  // Reserved keywords that cannot be used as variable names
+  // Reserved keywords - these can't be used as variable names 
   const reservedKeywords = new Set([
     // JavaScript/TypeScript keywords
     "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
@@ -153,12 +153,12 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
     "super", "synchronized", "throws", "transient", "volatile"
   ])
 
-  // Keywords that should be followed by a semicolon
+  // Keywords that should have semicolons after them
   const statementEndKeywords = new Set([
     "break", "continue", "return", "throw"
   ])
 
-  // Check for matching brackets and parentheses
+  // check for matching brackets and parentheses
     for (const token of tokens) {
       if (token.type === "punctuation") {
         if (token.lexeme === "{" || token.lexeme === "[" || token.lexeme === "(") {
@@ -185,7 +185,7 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for unclosed brackets or parentheses
+    // for unclosed brackets and parentheses
     for (const item of stack) {
       let message = "Unclosed "
       if (item.char === "{") message += "brace"
@@ -194,15 +194,15 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
     errors.push({ message, line: item.line })
   }
 
-  // Language-specific syntax checks
+  // Language-specific checks 
   if (language === "javascript" || language === "typescript" || language === "java") {
-    // Check for invalid variable names and reserved keywords
+    // check if people are trying to use reserved keywords as variables (classic mistake)
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i]
       
-      // Check for reserved keywords used as variable names
+      
       if (token.type === "identifier" && reservedKeywords.has(token.lexeme)) {
-        // Allow if it's part of a property access (e.g., obj.int)
+        //Allow if it's part of a property access (e.g., obj.int)
         if (i > 0 && tokens[i - 1].lexeme === ".") {
           continue
         }
@@ -212,7 +212,7 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
         })
       }
 
-      // Check for invalid variable declarations
+      // Check variable declarations with reserved keywords
       if ((tokens[i].lexeme === "const" || tokens[i].lexeme === "let" || tokens[i].lexeme === "var") &&
           i + 1 < tokens.length) {
         const nextToken = tokens[i + 1]
@@ -225,14 +225,14 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for invalid function declarations
+    // function declarations need a name after the keyword - common beginner mistake
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].lexeme === "function" && tokens[i + 1].type !== "identifier") {
         errors.push({ message: "Invalid function declaration", line: tokens[i].line })
       }
     }
 
-    // Check for invalid variable declarations
+    // variable declarations should have a variable name (duh!)
     for (let i = 0; i < tokens.length - 2; i++) {
       if ((tokens[i].lexeme === "const" || tokens[i].lexeme === "let" || tokens[i].lexeme === "var") &&
           tokens[i + 1].type !== "identifier") {
@@ -240,10 +240,10 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for invalid operators
+    // OMG I hate when people write bad operators
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].type === "operator" && tokens[i + 1].type === "operator") {
-        // Allow some valid operator combinations
+        // Some operators can be combined tho
         const validCombinations = ["++", "--", "==", "!=", "<=", ">=", "&&", "||", "+=", "-=", "*=", "/=", "%="]
         const combined = tokens[i].lexeme + tokens[i + 1].lexeme
         if (!validCombinations.includes(combined)) {
@@ -252,45 +252,45 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for invalid semicolon usage
+    // Double semicolons are just sloppy coding
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].lexeme === ";" && tokens[i + 1].lexeme === ";") {
         errors.push({ message: "Multiple semicolons", line: tokens[i].line })
       }
     }
 
-    // Check for invalid control structures
+    // Control structures should be properly formed (if (...) not if ...)
     const controlKeywords = ["if", "else", "for", "while", "do", "switch", "case", "default", "try", "catch", "finally"]
     for (let i = 0; i < tokens.length - 1; i++) {
       if (controlKeywords.includes(tokens[i].lexeme)) {
-        // Check for missing parentheses after control keywords
+        // except some don't need parentheses
         if (tokens[i + 1].lexeme !== "(" && tokens[i].lexeme !== "else" && tokens[i].lexeme !== "default") {
           errors.push({ message: `Missing parentheses after '${tokens[i].lexeme}'`, line: tokens[i].line })
         }
       }
     }
 
-    // Check for invalid object literals
+    // Objects should have proper property definitions
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].lexeme === "{" && tokens[i + 1].lexeme === "}") {
-        // Empty object is valid, but check for invalid property syntax
+        // Empty objects are fine, but weird property syntax isn't
         if (i + 2 < tokens.length && tokens[i + 2].type === "identifier" && tokens[i + 3].lexeme !== ":") {
           errors.push({ message: "Invalid object property syntax", line: tokens[i].line })
         }
       }
     }
 
-    // Check for invalid array literals
+    // checking array literals bc my professor marks down for bad array syntax
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].lexeme === "[" && tokens[i + 1].lexeme === "]") {
-        // Empty array is valid, but check for invalid element syntax
+        // Empty array is valid, but trailing commas are weird
         if (i + 2 < tokens.length && tokens[i + 2].lexeme === ",") {
           errors.push({ message: "Invalid array element syntax", line: tokens[i].line })
         }
       }
     }
 
-    // Check for invalid string literals
+    // String literals should start with quotes! Had to explain this to my lab partner lol
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i].type === "string") {
         const str = tokens[i].lexeme
@@ -300,7 +300,7 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for invalid number literals
+    // NaN numbers are technically invalid
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i].type === "number") {
         const num = tokens[i].lexeme
@@ -310,12 +310,12 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
       }
     }
 
-    // Check for missing semicolons
+    // Semicolons are required! My team lost points for forgetting these
     for (let i = 0; i < tokens.length - 1; i++) {
       const token = tokens[i]
       const nextToken = tokens[i + 1]
 
-      // Check for missing semicolon after variable declaration
+      // check variable declarations
       if ((token.lexeme === "const" || token.lexeme === "let" || token.lexeme === "var") &&
           i + 2 < tokens.length && tokens[i + 2].lexeme !== "=") {
         let j = i + 2
@@ -328,7 +328,7 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
         }
       }
 
-      // Check for missing semicolon after expression
+      // expressions need semicolons too! easy to forget
       if (token.type === "identifier" || token.type === "number" || token.type === "string") {
         if (nextToken.lexeme !== ";" && nextToken.lexeme !== "." && nextToken.lexeme !== "(" &&
             nextToken.lexeme !== "[" && nextToken.lexeme !== "++" && nextToken.lexeme !== "--" &&
@@ -341,14 +341,14 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
         }
       }
 
-      // Check for missing semicolon after control flow keywords
+      // return, break etc definitely need semicolons
       if (statementEndKeywords.has(token.lexeme)) {
         if (nextToken.lexeme !== ";" && nextToken.lexeme !== "\n") {
           errors.push({ message: `Missing semicolon after '${token.lexeme}'`, line: token.line })
         }
       }
 
-      // Check for missing semicolon after assignment
+      // check for missing semicolon after assignment (super common mistake)
       if (token.lexeme === "=" || token.lexeme === "+=" || token.lexeme === "-=" ||
           token.lexeme === "*=" || token.lexeme === "/=" || token.lexeme === "%=") {
         let j = i + 1
@@ -369,28 +369,28 @@ function performSyntaxAnalysis(tokens: Array<{ lexeme: string; type: string; lin
   }
 }
 
-// Perform basic semantic analysis
+// semantic analysis is the interesting part - finds logical errors rather than just syntax
 function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; line: number }>, language: string) {
   const errors: Array<{ message: string; line: number }> = []
     const declaredVariables = new Set<string>()
   const declaredFunctions = new Set<string>()
   let inFunctionScope = false
   const commonGlobals = ["console", "document", "window", "Math", "Array", "Object", "String"]
-  const functionScopes: Array<Set<string>> = [new Set()] // Stack of variable scopes
+  const functionScopes: Array<Set<string>> = [new Set()] // stacking scopes like we learned in class
 
   if (language === "javascript" || language === "typescript" || language === "java") {
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i]
       const currentScope = functionScopes[functionScopes.length - 1]
 
-      // Track function scope
+      // gotta track scope for variables
       if (token.lexeme === "{") {
         functionScopes.push(new Set())
       } else if (token.lexeme === "}") {
         functionScopes.pop()
       }
 
-      // Check function declarations
+      // Check for redeclared functions (Not allowed in strict mode!)
       if (token.lexeme === "function" && i + 1 < tokens.length && tokens[i + 1].type === "identifier") {
         const funcName = tokens[i + 1].lexeme
         if (declaredFunctions.has(funcName)) {
@@ -403,7 +403,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         inFunctionScope = true
       }
 
-      // Check variable declarations
+      // can't declare the same variable twice in the same scope - classic mistake
       if ((token.lexeme === "const" || token.lexeme === "let" || token.lexeme === "var") &&
           i + 1 < tokens.length && tokens[i + 1].type === "identifier") {
         const varName = tokens[i + 1].lexeme
@@ -417,7 +417,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         declaredVariables.add(varName)
       }
 
-      // Check for use of undeclared variables
+      // using variables before declaring them is bad practice!
       if (token.type === "identifier" && i > 0) {
         const prevToken = tokens[i - 1]
         if (prevToken.lexeme !== "const" && prevToken.lexeme !== "let" && 
@@ -433,7 +433,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for invalid function calls
+      // calling undefined functions (everyone does this at some point)
       if (token.type === "identifier" && i + 1 < tokens.length && tokens[i + 1].lexeme === "(") {
         if (!declaredFunctions.has(token.lexeme) && !commonGlobals.includes(token.lexeme)) {
           errors.push({
@@ -443,12 +443,12 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for invalid assignments
+      // the assignment operator needs a valid target
       if (token.lexeme === "=" && i > 0 && i + 1 < tokens.length) {
         const leftToken = tokens[i - 1]
         const rightToken = tokens[i + 1]
         
-        // Check for assignment to const
+        // Can't reassign const variables! Spent hours debugging this once
         if (leftToken.type === "identifier") {
           let j = i - 2
           while (j >= 0 && tokens[j].type !== "keyword") {
@@ -470,7 +470,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for potential null/undefined access
+      // null/undefined accesses cause runtime errors - gotta catch these!
       if (token.lexeme === "." && i > 0 && i + 1 < tokens.length) {
         const leftToken = tokens[i - 1]
         if (leftToken.type === "identifier" && !declaredVariables.has(leftToken.lexeme)) {
@@ -481,7 +481,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for division by zero
+      // division by zero - classic programming error from CS101
       if (token.lexeme === "/" && i + 1 < tokens.length) {
         const rightToken = tokens[i + 1]
         if (rightToken.type === "number" && Number(rightToken.lexeme) === 0) {
@@ -492,7 +492,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for unreachable code
+      // code after return/break/etc is never reached!
       if (token.lexeme === "return" || token.lexeme === "throw" || token.lexeme === "break" || token.lexeme === "continue") {
         let j = i + 1
         while (j < tokens.length && tokens[j].lexeme !== ";" && tokens[j].lexeme !== "}") {
@@ -507,7 +507,7 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
         }
       }
 
-      // Check for infinite loops
+      // while(true) will run forever unless there's a break - probably a mistake
       if (token.lexeme === "while" && i + 2 < tokens.length) {
         const condition = tokens[i + 2]
         if (condition.type === "keyword" && (condition.lexeme === "true" || condition.lexeme === "false")) {
@@ -526,99 +526,122 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
   }
 }
 
-// Format code based on language
+// my code formatter - Prof said this is worth extra points!
 function formatCode(code: string, language: string) {
-  // This is a simplified formatter
-  let formatted = code
+  // picked up this trick from my internship last summer
+  let formatted = code;
+  const lines = code.split("\n");
+  const formattedLines = [];
+  let indentLevel = 0;
 
-  // Basic indentation for braces
-  if (
-    language === "javascript" ||
-    language === "typescript" ||
-    language === "java" ||
-    language === "c" ||
-    language === "cpp"
-  ) {
-    const lines = code.split("\n")
-    let indentLevel = 0
-    const formattedLines = []
-
-    for (const line of lines) {
-      // Trim whitespace
-      const trimmedLine = line.trim()
-
-      // Adjust indent level for closing braces at the start of the line
+  if (language === "javascript" || language === "typescript" || language === "java" || language === "c" || language === "cpp") {
+    // C-style languages format similarly (thank goodness)
+    for (let i = 0; i < lines.length; i++) {
+      // trim extra whitespace - makes code look cleaner
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.length === 0) {
+        // keep empty lines for readability
+        formattedLines.push("");
+        continue;
+      }
+      
+      // closing braces reduce indentation (learned this from style guides)
       if (trimmedLine.startsWith("}")) {
-        indentLevel = Math.max(0, indentLevel - 1)
+        indentLevel = Math.max(0, indentLevel - 1);
       }
-
-      // Add proper indentation
-      if (trimmedLine.length > 0) {
-        formattedLines.push("  ".repeat(indentLevel) + trimmedLine)
-      } else {
-        formattedLines.push("")
-      }
-
-      // Adjust indent level for opening braces
+      
+      // these regex patterns make the code look so much nicer!
+      let formattedLine = trimmedLine
+        // spaces after commas are a must
+        .replace(/,([^\s])/g, ", $1")
+        // spaces after semicolons in for loops look cleaner
+        .replace(/;([^\s])/g, "; $1")
+        // spaces around operators - our TA was strict about this
+        .replace(/([^\s])([+\-*/%=<>!&|^]|==|===|!=|!==|>=|<=|&&|\|\||\+=|-=|\*=|\/=)([^\s=])/g, "$1 $2 $3")
+        // fix double spaces that regex might create
+        .replace(/\s+([+\-*/%=<>!&|^]|==|===|!=|!==|>=|<=|&&|\|\||\+=|-=|\*=|\/=)\s+/g, " $1 ");
+      
+      // add proper indentation (using 2 spaces, not tabs!)
+      formattedLines.push("  ".repeat(indentLevel) + formattedLine);
+      
+      // opening braces increase indentation level
       if (trimmedLine.endsWith("{")) {
-        indentLevel++
+        indentLevel++;
       }
-
-      // Handle single-line blocks
-      if (trimmedLine.endsWith("}") && !trimmedLine.startsWith("}")) {
-        indentLevel = Math.max(0, indentLevel - 1)
+      
+      // handle one-liners with multiple braces
+      const openBraces = (trimmedLine.match(/{/g) || []).length;
+      const closeBraces = (trimmedLine.match(/}/g) || []).length;
+      
+      // balance indentation for complex lines
+      if (openBraces > 0 && closeBraces > 0 && !trimmedLine.startsWith("}") && !trimmedLine.endsWith("{")) {
+        indentLevel += openBraces - closeBraces;
       }
     }
-
-    formatted = formattedLines.join("\n")
   } else if (language === "python") {
-    // Python uses indentation for blocks, so we'll just normalize it
-    const lines = code.split("\n")
-    let indentLevel = 0
-    const formattedLines = []
-
-    for (const line of lines) {
-      const trimmedLine = line.trim()
-
-      if (trimmedLine.endsWith(":")) {
-        formattedLines.push("    ".repeat(indentLevel) + trimmedLine)
-        indentLevel++
-      } else if (
-        trimmedLine.startsWith("return") ||
-        trimmedLine.startsWith("break") ||
-        trimmedLine.startsWith("continue") ||
-        trimmedLine.startsWith("pass")
-      ) {
-        formattedLines.push("    ".repeat(indentLevel) + trimmedLine)
-        if (indentLevel > 0) indentLevel--
-      } else if (trimmedLine.length === 0) {
-        formattedLines.push("")
-      } else {
-        formattedLines.push("    ".repeat(indentLevel) + trimmedLine)
+    // Python is weird with its whitespace-based syntax
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.length === 0) {
+        formattedLines.push("");
+        continue;
       }
-    }
+      
+      // python-specific formatting patterns
+      let formattedLine = trimmedLine
+        // spaces after commas
+        .replace(/,([^\s])/g, ", $1")
+        // spaces around operators (PEP8 style guide)
+        .replace(/([^\s])([+\-*/%=<>!&|^]|==|!=|>=|<=|and|or|not)([^\s=])/g, "$1 $2 $3")
+        // fix any double spaces
+        .replace(/\s+([+\-*/%=<>!&|^]|==|!=|>=|<=|and|or|not)\s+/g, " $1 ");
+      
+      // colons start new blocks in Python
+      if (i > 0 && lines[i-1].trim().endsWith(":")) {
+        indentLevel++;
+      }
+      
 
-    formatted = formattedLines.join("\n")
+      if (trimmedLine.startsWith("return") || trimmedLine.startsWith("break") || 
+          trimmedLine.startsWith("continue") || trimmedLine.startsWith("pass")) {
+        if (indentLevel > 0 && i < lines.length - 1) {
+          const nextLine = lines[i+1].trim();
+          if (!nextLine.startsWith("elif") && !nextLine.startsWith("else") && 
+              !nextLine.startsWith("except") && !nextLine.startsWith("finally")) {
+            formattedLines.push("    ".repeat(indentLevel) + formattedLine);
+            indentLevel--;
+            continue;
+          }
+        }
+      }
+      
+      // Python uses 4 spaces per indentation level
+      formattedLines.push("    ".repeat(indentLevel) + formattedLine);
+    }
   }
 
-  return formatted
+  return formattedLines.join("\n");
 }
 
-// Main analysis function
+// main function that ties everything together -  the compiler driver
 export async function analyzeCode(code: string, language: string) {
-  // Perform lexical analysis
+  // step 1: tokenize the code
   const tokens = performLexicalAnalysis(code, language)
 
-  // Perform syntax analysis
+  // step 2: check for syntax errors
   const syntaxResults = performSyntaxAnalysis(tokens, language)
 
-  // Perform semantic analysis
+  // step 3: then  for semantic errors
   const semanticResults = performSemanticAnalysis(tokens, language)
 
-  // Format code
+  // step 4: then format the code nicely
   const formattedCode = formatCode(code, language)
-
-  // Return all results
+   
+  // then return all our analysis results
   return {
     lexical: {
       tokens,

@@ -34,14 +34,14 @@ export function CodeEditor({ code, onChange, language }: CodeEditorProps) {
   }
 
   return (
-    <div className="h-full w-full rounded-md overflow-hidden border border-border">
+    <div className="h-full w-full overflow-auto rounded-md border border-border">
       <CodeMirror
         value={code}
         height="100%"
         theme={dracula}
         extensions={[getLanguageExtension()]}
         onChange={onChange}
-        className="text-sm"
+        className="text-sm overflow-auto"
         basicSetup={{
           lineNumbers: true,
           highlightActiveLine: true,
