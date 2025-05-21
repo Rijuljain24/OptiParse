@@ -528,16 +528,13 @@ function performSemanticAnalysis(tokens: Array<{ lexeme: string; type: string; l
 
 // my code formatter - Prof said this is worth extra points!
 function formatCode(code: string, language: string) {
-  // picked up this trick from my internship last summer
   let formatted = code;
   const lines = code.split("\n");
   const formattedLines = [];
   let indentLevel = 0;
 
   if (language === "javascript" || language === "typescript" || language === "java" || language === "c" || language === "cpp") {
-    // C-style languages format similarly (thank goodness)
     for (let i = 0; i < lines.length; i++) {
-      // trim extra whitespace - makes code look cleaner
       const line = lines[i];
       const trimmedLine = line.trim();
       
