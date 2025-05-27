@@ -546,7 +546,7 @@ function formatCode(code: string, language: string) {
       
       // closing braces reduce indentation (learned this from style guides)
       if (trimmedLine.startsWith("}")) {
-        indentLevel = Math.max(0, indentLevel - 1);
+        indentLevel = Math.max(0, indentLevel - 1); 
       }
       
       // these regex patterns make the code look so much nicer!
